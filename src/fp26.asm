@@ -3,9 +3,9 @@ org 0x100
 %define targetFPS 35
 %define tempo 1193182/1/targetFPS	
 
-cur_x     equ   0x902
-cur_y2    equ   0x903
-intensity equ   0x904
+x2        equ   0x900
+incx      equ   0x902
+count     equ   0x903
 
 initial_time    equ 0xffc0
 final_time      equ 0x86
@@ -57,7 +57,6 @@ loop:
   mov ax, word [x2]
   ;cbw ; convert 8-bit negative to 16-bit negative (ax)
   mov dx, bp
-  ;mov dx, -32*2
   sub ax, dx
   cmp ax, 0
 
@@ -118,22 +117,31 @@ palette:
   ;db 34, 79, 79, 76
   ;db 36, 60, 84, 15
 
-  db 0, 124, 2, 50
-  db 4, 25, 116, 71
-  db 34, 79, 79, 76
-  db 36, 60, 84, 15
+  db 0
+  db 3   ; l0
+  db 124 ; l1
+  db 52  ; l0+l1
+
+  db 4   ; l2
+  db 52  ; l0+l2
+  db 27  ; l1+l2
+  db 100 ; l0+l1+l2
+
+  db 108 ; l3
+  db 56  ; l0+l3
+  db 79  ; l1+l3
+  db 76 ; l0+l1+l3
+
+  db 38  ; l2+l3
+  db 60  ; l0+l2+l3
+  db 84  ; l1+l2+l3
+  db 15  ; l0+l1+l2+l3
+
 
 fptext:
   db 0xe8, 0xec, 0xa0, 0xee, 0xee, 0xa0
   db 0xc8, 0xee, 0xe0, 0xee, 0xc4, 0xe0
   db 0x8e, 0xa6, 0xa0, 0x8a, 0xa4, 0x40
-x2:
-  db 0
-  db 0
-incx:
-  db 0
-count:
-  db 0
 
 ;music:
 ;  db 0xc3  ; change instrument on channel 3
