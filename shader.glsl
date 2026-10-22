@@ -53,7 +53,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
               }
             }
             x2 += x/8;
-        }      
+        }
     }
 
     // Output to screen

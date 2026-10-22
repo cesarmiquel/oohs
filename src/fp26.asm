@@ -28,8 +28,7 @@ top:
 	mov ax, 0xcccd
 	mul di  ; dh: y coord, dl: x coord + carry
 
-
-  mov byte [idx+2], 0
+  mov byte [palidx+2], 0
 
   shr dh, 5 ; row - y/32
   sub dh, 2 ; row - 2
@@ -46,37 +45,55 @@ top:
   mul ax, 6   ; row * 6
   add si, ax
 
+  ; save x and init x2
+  mov al, dl
+  cbw
+  mov word [x2], ax
+  sar dl, 3
+  mov byte [incx], dl
+  mov byte [count], 1
+
 loop:
-  xchg al, dl
-  cbw ; convert 8-bit negative to 16-bit negative (ax)
+  mov ax, word [x2]
+  ;cbw ; convert 8-bit negative to 16-bit negative (ax)
   mov dx, bp
+  ;mov dx, -32*2
   sub ax, dx
   cmp ax, 0
 
-  jl blit
+  jl skip
 
-  shr ax, 4  ; ofx = (x2-x1)/32
+  shr ax, 5  ; ofx = (x2-x1)/32
   push ax
   shr ax, 3  ; pos = ofx/8
   cmp al, 5
   jg  blit
 
   ;  TODO: usar bx para despues hacer [si + bx]
-  add si, ax
+  xchg bx, ax
 
-  xor bh, bh
-  mov bl, byte [si]
+  xor ah, ah
+  mov al, byte [si+bx]
   pop cx
   and cx, 0x0007
-  shl bl, cl
+  shl al, cl
   jnc skip
 
-  mov byte [idx+2], 0xf
+  mov cl, byte [count]
+  or byte [palidx+2], cl
 
 skip:
+  mov al, byte [incx]
+  cbw
+  add word [x2], ax
+
+  shl [count], 1
+  cmp [count], 0x10
+  jne loop
+
 blit:
   mov si, palette
-idx:
+palidx:
   add si, byte 0x2
   lodsb
 	stosb
@@ -92,10 +109,15 @@ idx:
 
 timer:
   dec bp
-  dec bp
+  ;dec bp
   iret
 
 palette:
+  ;db 0, 124, 2, 50
+  ;db 4, 25, 116, 71
+  ;db 34, 79, 79, 76
+  ;db 36, 60, 84, 15
+
   db 0, 124, 2, 50
   db 4, 25, 116, 71
   db 34, 79, 79, 76
@@ -105,6 +127,13 @@ fptext:
   db 0xe8, 0xec, 0xa0, 0xee, 0xee, 0xa0
   db 0xc8, 0xee, 0xe0, 0xee, 0xc4, 0xe0
   db 0x8e, 0xa6, 0xa0, 0x8a, 0xa4, 0x40
+x2:
+  db 0
+  db 0
+incx:
+  db 0
+count:
+  db 0
 
 ;music:
 ;  db 0xc3  ; change instrument on channel 3
