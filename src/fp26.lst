@@ -21,26 +21,26 @@
     21                                  
     22                                    ; setup dos timer
     23 00000009 B81C25                    mov ax, 0x251c
-    24 0000000C BA[7200]                	mov dx, timer
+    24 0000000C BA[7600]                	mov dx, timer
     25 0000000F CD21                    	int 0x21
     26                                  
     27                                  top:
     28 00000011 B8CDCC                  	mov ax, 0xcccd
     29 00000014 F7E7                    	mul di  ; dh: y coord, dl: x coord + carry
-    30                                    ;mov bx, dl
-    31                                    ;shl bx, 3 ; bx = x / 8
-    32 00000016 C606[6100]00              mov byte [idx+2], 0
+    30                                  
+    31                                  
+    32 00000016 C606[6500]00              mov byte [idx+2], 0
     33                                  
     34 0000001B C0EE05                    shr dh, 5 ; row - y/32
     35 0000001E 80EE02                    sub dh, 2 ; row - 2
     36                                  
     37                                    ; 0 <= row < 3
-    38 00000021 7C39                      jl blit
+    38 00000021 7C3D                      jl blit
     39 00000023 80FE02                    cmp dh, 2
-    40 00000026 7F34                      jg blit
+    40 00000026 7F38                      jg blit
     41                                  
     42                                    ; load si with pointer to font row
-    43 00000028 BE[8500]                  mov si, fptext
+    43 00000028 BE[8900]                  mov si, fptext
     44 0000002B 31C0                      xor ax, ax
     45 0000002D 88F0                      mov al, dh
     46 0000002F 69C00600                  mul ax, 6   ; row * 6
@@ -51,75 +51,66 @@
     51 00000037 98                        cbw ; convert 8-bit negative to 16-bit negative (ax)
     52 00000038 89EA                      mov dx, bp
     53 0000003A 29D0                      sub ax, dx
-    54                                    ;mov ax, word 0x0
-    55                                    ;xor dh, dh
-    56                                    ;sub dx, ax
-    57 0000003C 3D0000                    cmp ax, 0
-    58                                  
-    59 0000003F 7C1B                      jl blit
-    60                                  
-    61                                    ;mov byte [idx+2], 0xd
-    62                                  
-    63 00000041 C1E804                    shr ax, 4  ; ofx = (x2-x1)/32
-    64 00000044 50                        push ax
-    65 00000045 C1E803                    shr ax, 3  ; pos = ofx/8
-    66                                    ;cmp al, 5
-    67                                    ;jg  skip
-    68                                  
-    69                                    ;  TODO: usar bx para despues hacer [si + bx]
-    70                                    ;xor ah, ah
-    71 00000048 01C6                      add si, ax
-    72                                  
-    73 0000004A 30FF                      xor bh, bh
-    74 0000004C 8A1C                      mov bl, byte [si]
-    75 0000004E 59                        pop cx
-    76 0000004F 81E10700                  and cx, 0x0007
-    77 00000053 D2E3                      shl bl, cl
-    78 00000055 7305                      jnc skip
-    79                                  
-    80 00000057 C606[6100]0F              mov byte [idx+2], 0xf
-    81                                  
-    82                                  skip:
-    83                                    ; add dl, bx
-    84                                    ; jnz loop
-    85                                  
-    86                                  blit:
-    87 0000005C BE[7500]                  mov si, palette
-    88                                  idx:
-    89 0000005F 83C602                    add si, byte 0x2
-    90 00000062 AC                        lodsb
-    91 00000063 AA                      	stosb
-    92 00000064 47                      	inc di
-    93 00000065 47                      	inc di
-    94 00000066 75A9                      jnz top
-    95 00000068 B02A                      mov al, tempo
-    95          ******************       warning: byte exceeds bounds [-w+number-overflow]
-    96 0000006A E640                    	out 40h, al
-    97 0000006C E460                    	in al, 0x60
-    98 0000006E FEC8                    	dec al
-    99 00000070 759F                    	jnz top
-   100                                  
-   101                                  
-   102                                  timer:
-   103 00000072 4D                        dec bp
-   104 00000073 4D                        dec bp
-   105 00000074 CF                        iret
-   106                                  
-   107                                  palette:
-   108 00000075 007C0232                  db 0, 124, 2, 50
-   109 00000079 04197447                  db 4, 25, 116, 71
-   110 0000007D 224F4F4C                  db 34, 79, 79, 76
-   111 00000081 243C540F                  db 36, 60, 84, 15
-   112                                  
-   113                                  fptext:
-   114 00000085 E8ECA0EEEEA0              db 0xe8, 0xec, 0xa0, 0xee, 0xee, 0xa0
-   115 0000008B C8EEE0EEC4E0              db 0xc8, 0xee, 0xe0, 0xee, 0xc4, 0xe0
-   116 00000091 8EA6A08AA440              db 0x8e, 0xa6, 0xa0, 0x8a, 0xa4, 0x40
-   117                                  
-   118                                  ;music:
-   119                                  ;  db 0xc3  ; change instrument on channel 3
-   120                                  ;  db 49    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
-   121                                  ;  db 0x93  ; play note on channel 3
-   122                                  ;  db 10    ; deep "b" = note number 35
-   123                                  ;  db 34    ; play with volume = 127
-   124                                  ;  ;db 43    ; play with volume = 127
+    54 0000003C 3D0000                    cmp ax, 0
+    55                                  
+    56 0000003F 7C1F                      jl blit
+    57                                  
+    58 00000041 C1E804                    shr ax, 4  ; ofx = (x2-x1)/32
+    59 00000044 50                        push ax
+    60 00000045 C1E803                    shr ax, 3  ; pos = ofx/8
+    61 00000048 3C05                      cmp al, 5
+    62 0000004A 7F14                      jg  blit
+    63                                  
+    64                                    ;  TODO: usar bx para despues hacer [si + bx]
+    65 0000004C 01C6                      add si, ax
+    66                                  
+    67 0000004E 30FF                      xor bh, bh
+    68 00000050 8A1C                      mov bl, byte [si]
+    69 00000052 59                        pop cx
+    70 00000053 81E10700                  and cx, 0x0007
+    71 00000057 D2E3                      shl bl, cl
+    72 00000059 7305                      jnc skip
+    73                                  
+    74 0000005B C606[6500]0F              mov byte [idx+2], 0xf
+    75                                  
+    76                                  skip:
+    77                                  blit:
+    78 00000060 BE[7900]                  mov si, palette
+    79                                  idx:
+    80 00000063 83C602                    add si, byte 0x2
+    81 00000066 AC                        lodsb
+    82 00000067 AA                      	stosb
+    83 00000068 47                      	inc di
+    84 00000069 47                      	inc di
+    85 0000006A 75A5                      jnz top
+    86 0000006C B02A                      mov al, tempo
+    86          ******************       warning: byte exceeds bounds [-w+number-overflow]
+    87 0000006E E640                    	out 40h, al
+    88 00000070 E460                    	in al, 0x60
+    89 00000072 FEC8                    	dec al
+    90 00000074 759B                    	jnz top
+    91                                  
+    92                                  
+    93                                  timer:
+    94 00000076 4D                        dec bp
+    95 00000077 4D                        dec bp
+    96 00000078 CF                        iret
+    97                                  
+    98                                  palette:
+    99 00000079 007C0232                  db 0, 124, 2, 50
+   100 0000007D 04197447                  db 4, 25, 116, 71
+   101 00000081 224F4F4C                  db 34, 79, 79, 76
+   102 00000085 243C540F                  db 36, 60, 84, 15
+   103                                  
+   104                                  fptext:
+   105 00000089 E8ECA0EEEEA0              db 0xe8, 0xec, 0xa0, 0xee, 0xee, 0xa0
+   106 0000008F C8EEE0EEC4E0              db 0xc8, 0xee, 0xe0, 0xee, 0xc4, 0xe0
+   107 00000095 8EA6A08AA440              db 0x8e, 0xa6, 0xa0, 0x8a, 0xa4, 0x40
+   108                                  
+   109                                  ;music:
+   110                                  ;  db 0xc3  ; change instrument on channel 3
+   111                                  ;  db 49    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
+   112                                  ;  db 0x93  ; play note on channel 3
+   113                                  ;  db 10    ; deep "b" = note number 35
+   114                                  ;  db 34    ; play with volume = 127
+   115                                  ;  ;db 43    ; play with volume = 127

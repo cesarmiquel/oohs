@@ -27,8 +27,8 @@ init:
 top:
 	mov ax, 0xcccd
 	mul di  ; dh: y coord, dl: x coord + carry
-  ;mov bx, dl
-  ;shl bx, 3 ; bx = x / 8
+
+
   mov byte [idx+2], 0
 
   shr dh, 5 ; row - y/32
@@ -51,23 +51,17 @@ loop:
   cbw ; convert 8-bit negative to 16-bit negative (ax)
   mov dx, bp
   sub ax, dx
-  ;mov ax, word 0x0
-  ;xor dh, dh
-  ;sub dx, ax
   cmp ax, 0
 
   jl blit
 
-  ;mov byte [idx+2], 0xd
-
   shr ax, 4  ; ofx = (x2-x1)/32
   push ax
   shr ax, 3  ; pos = ofx/8
-  ;cmp al, 5
-  ;jg  skip
+  cmp al, 5
+  jg  blit
 
   ;  TODO: usar bx para despues hacer [si + bx]
-  ;xor ah, ah
   add si, ax
 
   xor bh, bh
@@ -80,9 +74,6 @@ loop:
   mov byte [idx+2], 0xf
 
 skip:
-  ; add dl, bx
-  ; jnz loop
-
 blit:
   mov si, palette
 idx:
