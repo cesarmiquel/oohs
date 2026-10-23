@@ -1,7 +1,6 @@
 org 0x100
 
-%define targetFPS 35
-%define tempo 1193182/1/targetFPS	
+%define tempo 30
 
 x2        equ   0x900
 incx      equ   0x902
@@ -30,6 +29,15 @@ top:
 
   mov byte [palidx+2], 0
 
+;  cmp dh, 64
+;  je draw
+;
+;  mov si, di
+;  sub si, 320*1
+;  mov al, byte [si]
+;  jmp blit2
+
+draw:
   shr dh, 5 ; row - y/32
   sub dh, 2 ; row - 2
 
@@ -47,15 +55,14 @@ top:
 
   ; save x and init x2
   mov al, dl
-  cbw
+  cbw ; convert 8-bit negative to 16-bit negative (ax)
   mov word [x2], ax
-  sar dl, 3
+  sar dl, 3  ; shift right and preserve sign
   mov byte [incx], dl
   mov byte [count], 1
 
 loop:
   mov ax, word [x2]
-  ;cbw ; convert 8-bit negative to 16-bit negative (ax)
   mov dx, bp
   sub ax, dx
   cmp ax, 0
@@ -68,7 +75,6 @@ loop:
   cmp al, 5
   jg  blit
 
-  ;  TODO: usar bx para despues hacer [si + bx]
   xchg bx, ax
 
   xor ah, ah
@@ -95,9 +101,14 @@ blit:
 palidx:
   add si, byte 0x2
   lodsb
+blit2:
 	stosb
 	inc di
 	inc di
+  jnz top
+  dec bp
+  dec bp
+  dec bp
   jnz top
   mov al, tempo
 	out 40h, al
@@ -107,7 +118,6 @@ palidx:
 
 
 timer:
-  dec bp
   ;dec bp
   iret
 
