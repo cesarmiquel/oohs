@@ -1,6 +1,6 @@
 org 0x100
 
-%define tempo 30
+%define tempo 10
 
 x2        equ   0x900
 incx      equ   0x902
@@ -23,19 +23,28 @@ init:
 	mov dx, timer
 	int 0x21
 
+
 top:
 	mov ax, 0xcccd
 	mul di  ; dh: y coord, dl: x coord + carry
 
   mov byte [palidx+2], 0
 
-;  cmp dh, 64
-;  je draw
-;
-;  mov si, di
-;  sub si, 320*1
-;  mov al, byte [si]
-;  jmp blit2
+  ;cmp dh, 64
+  ;je draw
+  ;;cmp dh, 65+32
+  ;;je draw
+  ;cmp dh, 65+63
+  ;je draw
+  ;cmp dh, 65+96
+  ;jg blit
+
+  ;mov si, di
+  ;sub si, 320
+  ;mov cx, 10
+  ;cld
+  ;es rep movsb
+  ;jmp top
 
 draw:
   shr dh, 5 ; row - y/32
@@ -63,23 +72,19 @@ draw:
 
 loop:
   mov ax, word [x2]
-  mov dx, bp
-  sub ax, dx
-  cmp ax, 0
-
+  sub ax, bp
   jl skip
 
   shr ax, 5  ; ofx = (x2-x1)/32
-  push ax
+  mov cx, ax
   shr ax, 3  ; pos = ofx/8
   cmp al, 5
-  jg  blit
+  jg restart
 
   xchg bx, ax
 
   xor ah, ah
   mov al, byte [si+bx]
-  pop cx
   and cx, 0x0007
   shl al, cl
   jnc skip
@@ -106,19 +111,32 @@ blit2:
 	inc di
 	inc di
   jnz top
-  dec bp
-  dec bp
-  dec bp
+  sub bp, 5
+  ;dec bp
+  ;dec bp
+  ;dec bp
+ 
+; - stabilizes image a bit
+  mov dx, 3DAh
+.wait_start:
+  in al, dx
+  test al, 8
+  jz .wait_start     ; wait for new retrace to begin
+
   jnz top
+
   mov al, tempo
 	out 40h, al
 	in al, 0x60
 	dec al
 	jnz top
 
+restart:
+;  pop ax
+  jne blit
 
 timer:
-  ;dec bp
+  ;sub bp, 5
   iret
 
 palette:
