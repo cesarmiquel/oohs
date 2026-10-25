@@ -1,6 +1,6 @@
 org 0x100
 
-%define tempo 50
+%define tempo 10
 
 x2        equ   0x900
 incx      equ   0x902
@@ -18,9 +18,9 @@ init:
 	pop es
 
   ; setup dos timer
-  ;mov ax, 0x251c
-	;mov dx, timer
-	;int 0x21
+  mov ax, 0x251c
+	mov dx, timer
+	int 0x21
 
   ; DELETE
   mov bp, initial_time
@@ -120,6 +120,7 @@ blit:
   xlat
 	stosb
 
+
   ; DELETE
 ;.loop:
 ;  cmp di, 64*320 + 320*20
@@ -131,33 +132,33 @@ blit:
   jnz top
 
 ; - stabilizes image a bit
-;  mov dx, 3DAh
-;.wait_start:
-;  in al, dx
-;  test al, 8
-;  jz .wait_start     ; wait for new retrace to begin
+  mov dx, 3DAh
+.wait_start:
+  in al, dx
+  test al, 8
+  jz .wait_start     ; wait for new retrace to begin
 
-  dec bp
-  dec bp
+;  dec bp
   dec bp
 
-  cmp bp, 0xfb00
+  cmp bp, 0xf900
   jg .skip
 
   mov bp, initial_time
 
 .skip:
 
-;  mov al, tempo
-;	out 40h, al
-;	in al, 0x60
-;	dec al
-;	jmp top
+  mov al, tempo
+	out 40h, al
+	in al, 0x60
+	dec al
+	jmp top
 
 restart:
+  inc di
   jne top
 
-;timer:
+timer:
 ;  dec bp
 ;
 ;  cmp bp, 0xf900
@@ -169,20 +170,23 @@ restart:
 
 %ifdef MUSIC
   ; Music
-;  mov cx, bp
-;  and cx, 0x7f
-;  jnz skip_play
+  mov cx, bp
+  and cx, 0x07
+  jnz skip_play
 
-;  mov si, music
-;  mov dx, 0x330
-;  mov cl, 5
-;  rep  outsb
-;  inc dx
-;  outsb
+  add [music + 3], byte di
+  and [music + 3], 0x3f
+
+  mov si, music
+  mov dx, 0x330
+  mov cl, 5
+  rep  outsb
+  inc dx
+  outsb
 %endif
 
-;skip_play:
-;  iret
+skip_play:
+  iret
 
 palette:
   ;db 0, 124, 2, 50
@@ -216,15 +220,22 @@ fptext:
   db 0xc8, 0xee, 0xe0, 0xee, 0xc4, 0xe0
   db 0x8e, 0xa6, 0xa0, 0x8a, 0xa4, 0x40
 
-;music:
+%ifdef MUSIC
+music:
   ; single note
   ;db 0xc3  ; change instrument on channel 3
-  ;db 89    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
+  ;db 26    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
   ;db 0x93  ; play note on channel 10
-  ;db 35    ; deep "b" = note number 35
+  ;db 30    ; deep "b" = note number 35
   ;db 127    ; play with volume = 127
 
-  ;db 0x99   ; play note on channel 10
-  ;db 39   ; deep "b" = note number 35
-  ;db 127    ; play with volume = 127
+  db 0xc0  ; change instrument on channel 3
+  db 89    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
+  db 0x90   ; play note on channel 10
+  db 35   ; deep "b" = note number 35
+  db 127    ; play with volume = 127
+;  db 0x99   ; play note on channel 10
+;  db 42   ; deep "b" = note number 35
+;  db 127    ; play with volume = 127
 
+%endif
