@@ -4,7 +4,6 @@ org 0x100
 
 x2        equ   0x900
 incx      equ   0x902
-count     equ   0x903
 
 ;initial_time    equ 0xffc0
 initial_time    equ 260
@@ -26,7 +25,6 @@ init:
 
   ; DELETE
   mov bp, initial_time
-  ;mov di, 0
 
 top:
 	mov ax, 0xcccd
@@ -54,10 +52,10 @@ top:
 
   mov si, di
   sub si, 320
-  mov cl, 2
+  mov cx, 320
   cld
   es rep movsb
-  ja top
+  jmp short top
 
 draw:
   shr dh, 5 ; row - y/32
@@ -81,7 +79,8 @@ draw:
   mov word [x2], ax
   sar dl, 3  ; shift right and preserve sign
   mov byte [incx], dl
-  mov byte [count], 1
+
+  mov dl, 1
 
 loop:
   mov ax, word [x2]
@@ -103,7 +102,7 @@ loop:
   shl al, cl
   jnc .skip
 
-  mov cl, byte [count]
+  mov cl, dl
   or byte [palidx+2], cl
 
 .skip:
@@ -111,8 +110,8 @@ loop:
   cbw
   add word [x2], ax
 
-  shl [count], 1
-  cmp [count], 0x10
+  shl dl, 1
+  cmp dl, 0x10
   jne loop
 
 blit:
@@ -121,15 +120,15 @@ palidx:
   add si, byte 0x2
   lodsb
 	stosb
-blit2:
 
   ; DELETE
 ;.loop:
 ;  cmp di, 64*320 + 320*20
 ;  jg .loop
 
-	inc di
-	inc di
+	;inc di
+	;inc di
+  test di, di
   jnz top
 
 ; - stabilizes image a bit
@@ -151,16 +150,17 @@ restart:
 timer:
   dec bp
 
-  cmp bp, 0xfa00
+  cmp bp, 0xf900
   jg .skip
 
   mov bp, initial_time
 
 .skip:
+
 %ifdef MUSIC
   ; Music
   mov cx, bp
-  and cx, 0x3f
+  and cx, 0x7f
   jnz skip_play
 
   mov si, music
@@ -170,7 +170,6 @@ timer:
   inc dx
   outsb
 %endif
-
 
 skip_play:
   iret
@@ -215,7 +214,7 @@ music:
   ;db 35    ; deep "b" = note number 35
   ;db 127    ; play with volume = 127
 
-  db 0x99   ; play note on channel 10
-  db 39   ; deep "b" = note number 35
-  db 127    ; play with volume = 127
+  ;db 0x99   ; play note on channel 10
+  ;db 39   ; deep "b" = note number 35
+  ;db 127    ; play with volume = 127
 
