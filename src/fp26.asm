@@ -15,7 +15,7 @@ init:
 	mov al, 0x13
 	int 0x10
 	xchg bp, ax
-	push 0xa000-10
+	push 0xa000
 	pop es
 
   ; setup dos timer
@@ -75,10 +75,11 @@ draw:
 
   ; save x and init x2
   mov al, dl
+  xor al, 0x80
   cbw ; convert 8-bit negative to 16-bit negative (ax)
   mov word [x2], ax
-  sar dl, 3  ; shift right and preserve sign
-  mov byte [incx], dl
+  sar al, 3  ; shift right and preserve sign
+  mov byte [incx], al
 
   mov dl, 1
 
@@ -159,16 +160,16 @@ timer:
 
 %ifdef MUSIC
   ; Music
-  mov cx, bp
-  and cx, 0x7f
-  jnz skip_play
+;  mov cx, bp
+;  and cx, 0x7f
+;  jnz skip_play
 
-  mov si, music
-  mov dx, 0x330
-  mov cl, 5
-  rep  outsb
-  inc dx
-  outsb
+;  mov si, music
+;  mov dx, 0x330
+;  mov cl, 5
+;  rep  outsb
+;  inc dx
+;  outsb
 %endif
 
 skip_play:
@@ -206,7 +207,7 @@ fptext:
   db 0xc8, 0xee, 0xe0, 0xee, 0xc4, 0xe0
   db 0x8e, 0xa6, 0xa0, 0x8a, 0xa4, 0x40
 
-music:
+;music:
   ; single note
   ;db 0xc3  ; change instrument on channel 3
   ;db 89    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
