@@ -40,6 +40,9 @@ top:
   ;je draw
   ;cmp dh, 64+32*2
   ;je draw
+  ;cmp dh, 64+32*3+1
+  ;ja blit2
+
   ; draw only lines in 0x40, 0x60, 0x80
   mov al, dh         ; 2 bytes
   cmp al, 64+32*3+1
@@ -51,9 +54,9 @@ top:
 
   mov si, di
   sub si, 320
-  mov cl, 80
+  mov cl, 2
   cld
-  es rep movsw
+  es rep movsb
   ja top
 
 draw:
@@ -121,7 +124,7 @@ palidx:
 blit2:
 
   ; DELETE
-;.loop
+;.loop:
 ;  cmp di, 64*320 + 320*20
 ;  jg .loop
 
@@ -129,11 +132,6 @@ blit2:
 	inc di
   jnz top
 
-  ;sub bp, 5
-  ;dec bp
-  ;dec bp
-  ;dec bp
- 
 ; - stabilizes image a bit
 ;  mov dx, 3DAh
 ;.wait_start:
@@ -162,12 +160,12 @@ timer:
 %ifdef MUSIC
   ; Music
   mov cx, bp
-  and cx, 0x7f
+  and cx, 0x3f
   jnz skip_play
 
   mov si, music
   mov dx, 0x330
-  mov cl, 3
+  mov cl, 5
   rep  outsb
   inc dx
   outsb
@@ -210,9 +208,14 @@ fptext:
   db 0x8e, 0xa6, 0xa0, 0x8a, 0xa4, 0x40
 
 music:
-  ;db 0xca  ; change instrument on channel 3
-  ;db 39    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
-  db 0x99  ; play note on channel 10
-  db 35    ; deep "b" = note number 35
+  ; single note
+  ;db 0xc3  ; change instrument on channel 3
+  ;db 89    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
+  ;db 0x93  ; play note on channel 10
+  ;db 35    ; deep "b" = note number 35
+  ;db 127    ; play with volume = 127
+
+  db 0x99   ; play note on channel 10
+  db 39   ; deep "b" = note number 35
   db 127    ; play with volume = 127
-  ;db 43    ; play with volume = 127
+
