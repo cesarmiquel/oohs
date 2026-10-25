@@ -4,10 +4,9 @@ org 0x100
 
 x2        equ   0x900
 incx      equ   0x902
+idx       equ   0x904
 
-;initial_time    equ 0xffc0
 initial_time    equ 260
-final_time      equ 0x86
 
 init:
 
@@ -19,9 +18,9 @@ init:
 	pop es
 
   ; setup dos timer
-  mov ax, 0x251c
-	mov dx, timer
-	int 0x21
+  ;mov ax, 0x251c
+	;mov dx, timer
+	;int 0x21
 
   ; DELETE
   mov bp, initial_time
@@ -30,7 +29,7 @@ top:
 	mov ax, 0xcccd
 	mul di  ; dh: y coord, dl: x coord + carry
 
-  mov byte [palidx+2], 0
+  mov byte [idx], 0
 
   ;cmp dh, 64
   ;je draw
@@ -104,7 +103,7 @@ loop:
   jnc .skip
 
   mov cl, dl
-  or byte [palidx+2], cl
+  or byte [idx], cl
 
 .skip:
   mov al, byte [incx]
@@ -116,10 +115,9 @@ loop:
   jne loop
 
 blit:
-  mov si, palette
-palidx:
-  add si, byte 0x2
-  lodsb
+  mov bx, palette
+  mov al, byte [idx]
+  xlat
 	stosb
 
   ; DELETE
@@ -139,24 +137,35 @@ palidx:
 ;  test al, 8
 ;  jz .wait_start     ; wait for new retrace to begin
 
-  mov al, tempo
-	out 40h, al
-	in al, 0x60
-	dec al
-	jmp top
-
-restart:
-  jne blit
-
-timer:
+  dec bp
+  dec bp
   dec bp
 
-  cmp bp, 0xf900
+  cmp bp, 0xfb00
   jg .skip
 
   mov bp, initial_time
 
 .skip:
+
+;  mov al, tempo
+;	out 40h, al
+;	in al, 0x60
+;	dec al
+;	jmp top
+
+restart:
+  jne top
+
+;timer:
+;  dec bp
+;
+;  cmp bp, 0xf900
+;  jg .skip
+;
+;  mov bp, initial_time
+;
+;.skip:
 
 %ifdef MUSIC
   ; Music
@@ -172,8 +181,8 @@ timer:
 ;  outsb
 %endif
 
-skip_play:
-  iret
+;skip_play:
+;  iret
 
 palette:
   ;db 0, 124, 2, 50

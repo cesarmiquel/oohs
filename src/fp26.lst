@@ -4,218 +4,232 @@
      4                                  
      5                                  x2        equ   0x900
      6                                  incx      equ   0x902
-     7                                  
-     8                                  ;initial_time    equ 0xffc0
-     9                                  initial_time    equ 260
-    10                                  final_time      equ 0x86
-    11                                  
-    12                                  init:
-    13                                  
-    14                                    ; setup gfx
-    15 00000000 B013                    	mov al, 0x13
-    16 00000002 CD10                    	int 0x10
-    17 00000004 95                      	xchg bp, ax
-    18 00000005 6800A0                  	push 0xa000
-    19 00000008 07                      	pop es
-    20                                  
-    21                                    ; setup dos timer
-    22 00000009 B81C25                    mov ax, 0x251c
-    23 0000000C BA[B500]                	mov dx, timer
-    24 0000000F CD21                    	int 0x21
-    25                                  
-    26                                    ; DELETE
-    27 00000011 BD0401                    mov bp, initial_time
-    28                                  
-    29                                  top:
-    30 00000014 B8CDCC                  	mov ax, 0xcccd
-    31 00000017 F7E7                    	mul di  ; dh: y coord, dl: x coord + carry
-    32                                  
-    33 00000019 C606[9F00]00              mov byte [palidx+2], 0
-    34                                  
-    35                                    ;cmp dh, 64
-    36                                    ;je draw
-    37                                    ;cmp dh, 64+32
-    38                                    ;je draw
-    39                                    ;cmp dh, 64+32*2
-    40                                    ;je draw
-    41                                    ;cmp dh, 64+32*3+1
-    42                                    ;ja blit2
-    43                                  
-    44                                    ; draw only lines in 0x40, 0x60, 0x80
-    45 0000001E 88F0                      mov al, dh         ; 2 bytes
-    46 00000020 3CA1                      cmp al, 64+32*3+1
-    47 00000022 7776                      ja blit
-    48 00000024 C0C003                    rol al, 3          ; 3 bytes  40h->02h, 60h->03h, 80h->04h
-    49 00000027 2C02                      sub al, 2          ; 2 bytes  -> 0, 1, 2
-    50 00000029 3C02                      cmp al, 2          ; 2 bytes
-    51 0000002B 760F                      jbe draw           ; 2 bytes  unsigned: AL <= 2
-    52                                  
-    53 0000002D 89FE                      mov si, di
-    54 0000002F 81EE4001                  sub si, 320
-    55 00000033 B94001                    mov cx, 320
-    56 00000036 FC                        cld
-    57 00000037 26F3A4                    es rep movsb
-    58 0000003A EBD8                      jmp short top
-    59                                  
-    60                                  draw:
-    61 0000003C C0EE05                    shr dh, 5 ; row - y/32
-    62 0000003F 80EE02                    sub dh, 2 ; row - 2
-    63                                  
-    64                                    ; 0 <= row < 3
-    65 00000042 7C56                      jl blit
-    66 00000044 80FE02                    cmp dh, 2
-    67 00000047 7F51                      jg blit
-    68                                  
-    69                                    ; load si with pointer to font row
-    70 00000049 BE[D000]                  mov si, fptext
-    71 0000004C 31C0                      xor ax, ax
-    72 0000004E 88F0                      mov al, dh
-    73 00000050 69C00600                  mul ax, 6   ; row * 6
-    74 00000054 01C6                      add si, ax
-    75                                  
-    76                                    ; save x and init x2
-    77 00000056 88D0                      mov al, dl
-    78 00000058 3480                      xor al, 0x80
-    79 0000005A 98                        cbw ; convert 8-bit negative to 16-bit negative (ax)
-    80 0000005B A30009                    mov word [x2], ax
-    81 0000005E C0F803                    sar al, 3  ; shift right and preserve sign
-    82 00000061 A20209                    mov byte [incx], al
-    83                                  
-    84 00000064 B201                      mov dl, 1
-    85                                  
-    86                                  loop:
-    87 00000066 A10009                    mov ax, word [x2]
-    88 00000069 29E8                      sub ax, bp
-    89                                    ;sub ax, -80
-    90 0000006B 7C1E                      jl .skip
-    91                                  
-    92 0000006D C1E805                    shr ax, 5  ; ofx = (x2-x1)/32
-    93 00000070 89C1                      mov cx, ax
-    94 00000072 C1E803                    shr ax, 3  ; pos = ofx/8
-    95 00000075 3C05                      cmp al, 5
-    96 00000077 7F3A                      jg restart
-    97                                  
-    98 00000079 93                        xchg bx, ax
-    99                                  
-   100 0000007A 30E4                      xor ah, ah
-   101 0000007C 8A00                      mov al, byte [si+bx]
-   102 0000007E 80E107                    and cl, 0x07
-   103 00000081 D2E0                      shl al, cl
-   104 00000083 7306                      jnc .skip
-   105                                  
-   106 00000085 88D1                      mov cl, dl
-   107 00000087 080E[9F00]                or byte [palidx+2], cl
-   108                                  
-   109                                  .skip:
-   110 0000008B A00209                    mov al, byte [incx]
-   111 0000008E 98                        cbw
-   112 0000008F 01060009                  add word [x2], ax
-   113                                  
-   114 00000093 D0E2                      shl dl, 1
-   115 00000095 80FA10                    cmp dl, 0x10
-   116 00000098 75CC                      jne loop
-   117                                  
-   118                                  blit:
-   119 0000009A BE[C000]                  mov si, palette
-   120                                  palidx:
-   121 0000009D 83C602                    add si, byte 0x2
-   122 000000A0 AC                        lodsb
-   123 000000A1 AA                      	stosb
-   124                                  
-   125                                    ; DELETE
-   126                                  ;.loop:
-   127                                  ;  cmp di, 64*320 + 320*20
-   128                                  ;  jg .loop
-   129                                  
-   130                                  	;inc di
-   131                                  	;inc di
-   132 000000A2 85FF                      test di, di
-   133 000000A4 0F856CFF                  jnz top
-   134                                  
-   135                                  ; - stabilizes image a bit
-   136                                  ;  mov dx, 3DAh
-   137                                  ;.wait_start:
-   138                                  ;  in al, dx
-   139                                  ;  test al, 8
-   140                                  ;  jz .wait_start     ; wait for new retrace to begin
-   141                                  
-   142 000000A8 B032                      mov al, tempo
-   143 000000AA E640                    	out 40h, al
-   144 000000AC E460                    	in al, 0x60
-   145 000000AE FEC8                    	dec al
-   146 000000B0 E961FF                  	jmp top
-   147                                  
-   148                                  restart:
-   149 000000B3 75E5                      jne blit
-   150                                  
-   151                                  timer:
-   152 000000B5 4D                        dec bp
+     7                                  idx       equ   0x904
+     8                                  
+     9                                  ;initial_time    equ 0xffc0
+    10                                  initial_time    equ 260
+    11                                  final_time      equ 0x86
+    12                                  
+    13                                  init:
+    14                                  
+    15                                    ; setup gfx
+    16 00000000 B013                    	mov al, 0x13
+    17 00000002 CD10                    	int 0x10
+    18 00000004 95                      	xchg bp, ax
+    19 00000005 6800A0                  	push 0xa000
+    20 00000008 07                      	pop es
+    21                                  
+    22                                    ; setup dos timer
+    23                                    ;mov ax, 0x251c
+    24                                  	;mov dx, timer
+    25                                  	;int 0x21
+    26                                  
+    27                                    ; DELETE
+    28 00000009 BD0401                    mov bp, initial_time
+    29                                  
+    30                                  top:
+    31 0000000C B8CDCC                  	mov ax, 0xcccd
+    32 0000000F F7E7                    	mul di  ; dh: y coord, dl: x coord + carry
+    33                                  
+    34 00000011 C606040900                mov byte [idx], 0
+    35                                  
+    36                                    ;cmp dh, 64
+    37                                    ;je draw
+    38                                    ;cmp dh, 64+32
+    39                                    ;je draw
+    40                                    ;cmp dh, 64+32*2
+    41                                    ;je draw
+    42                                    ;cmp dh, 64+32*3+1
+    43                                    ;ja blit2
+    44                                  
+    45                                    ; draw only lines in 0x40, 0x60, 0x80
+    46 00000016 88F0                      mov al, dh         ; 2 bytes
+    47 00000018 3CA1                      cmp al, 64+32*3+1
+    48 0000001A 7776                      ja blit
+    49 0000001C C0C003                    rol al, 3          ; 3 bytes  40h->02h, 60h->03h, 80h->04h
+    50 0000001F 2C02                      sub al, 2          ; 2 bytes  -> 0, 1, 2
+    51 00000021 3C02                      cmp al, 2          ; 2 bytes
+    52 00000023 760F                      jbe draw           ; 2 bytes  unsigned: AL <= 2
+    53                                  
+    54 00000025 89FE                      mov si, di
+    55 00000027 81EE4001                  sub si, 320
+    56 0000002B B94001                    mov cx, 320
+    57 0000002E FC                        cld
+    58 0000002F 26F3A4                    es rep movsb
+    59 00000032 EBD8                      jmp short top
+    60                                  
+    61                                  draw:
+    62 00000034 C0EE05                    shr dh, 5 ; row - y/32
+    63 00000037 80EE02                    sub dh, 2 ; row - 2
+    64                                  
+    65                                    ; 0 <= row < 3
+    66 0000003A 7C56                      jl blit
+    67 0000003C 80FE02                    cmp dh, 2
+    68 0000003F 7F51                      jg blit
+    69                                  
+    70                                    ; load si with pointer to font row
+    71 00000041 BE[C000]                  mov si, fptext
+    72 00000044 31C0                      xor ax, ax
+    73 00000046 88F0                      mov al, dh
+    74 00000048 69C00600                  mul ax, 6   ; row * 6
+    75 0000004C 01C6                      add si, ax
+    76                                  
+    77                                    ; save x and init x2
+    78 0000004E 88D0                      mov al, dl
+    79 00000050 3480                      xor al, 0x80
+    80 00000052 98                        cbw ; convert 8-bit negative to 16-bit negative (ax)
+    81 00000053 A30009                    mov word [x2], ax
+    82 00000056 C0F803                    sar al, 3  ; shift right and preserve sign
+    83 00000059 A20209                    mov byte [incx], al
+    84                                  
+    85 0000005C B201                      mov dl, 1
+    86                                  
+    87                                  loop:
+    88 0000005E A10009                    mov ax, word [x2]
+    89 00000061 29E8                      sub ax, bp
+    90                                    ;sub ax, -80
+    91 00000063 7C1E                      jl .skip
+    92                                  
+    93 00000065 C1E805                    shr ax, 5  ; ofx = (x2-x1)/32
+    94 00000068 89C1                      mov cx, ax
+    95 0000006A C1E803                    shr ax, 3  ; pos = ofx/8
+    96 0000006D 3C05                      cmp al, 5
+    97 0000006F 7F3B                      jg restart
+    98                                  
+    99 00000071 93                        xchg bx, ax
+   100                                  
+   101 00000072 30E4                      xor ah, ah
+   102 00000074 8A00                      mov al, byte [si+bx]
+   103 00000076 80E107                    and cl, 0x07
+   104 00000079 D2E0                      shl al, cl
+   105 0000007B 7306                      jnc .skip
+   106                                  
+   107 0000007D 88D1                      mov cl, dl
+   108 0000007F 080E0409                  or byte [idx], cl
+   109                                  
+   110                                  .skip:
+   111 00000083 A00209                    mov al, byte [incx]
+   112 00000086 98                        cbw
+   113 00000087 01060009                  add word [x2], ax
+   114                                  
+   115 0000008B D0E2                      shl dl, 1
+   116 0000008D 80FA10                    cmp dl, 0x10
+   117 00000090 75CC                      jne loop
+   118                                  
+   119                                  blit:
+   120                                    ;mov si, palette
+   121                                    ;add si, byte 0x2
+   122                                    ;lodsb
+   123 00000092 BB[B000]                  mov bx, palette
+   124 00000095 A00409                    mov al, byte [idx]
+   125 00000098 D7                        xlat
+   126 00000099 AA                      	stosb
+   127                                  
+   128                                    ; DELETE
+   129                                  ;.loop:
+   130                                  ;  cmp di, 64*320 + 320*20
+   131                                  ;  jg .loop
+   132                                  
+   133                                  	;inc di
+   134                                  	;inc di
+   135 0000009A 85FF                      test di, di
+   136 0000009C 0F856CFF                  jnz top
+   137                                  
+   138                                  ; - stabilizes image a bit
+   139                                  ;  mov dx, 3DAh
+   140                                  ;.wait_start:
+   141                                  ;  in al, dx
+   142                                  ;  test al, 8
+   143                                  ;  jz .wait_start     ; wait for new retrace to begin
+   144                                  
+   145 000000A0 4D                        dec bp
+   146 000000A1 4D                        dec bp
+   147 000000A2 4D                        dec bp
+   148                                  
+   149 000000A3 81FD00FB                  cmp bp, 0xfb00
+   150 000000A7 7F03                      jg .skip
+   151                                  
+   152 000000A9 BD0401                    mov bp, initial_time
    153                                  
-   154 000000B6 81FD00F9                  cmp bp, 0xf900
-   155 000000BA 7F03                      jg .skip
-   156                                  
-   157 000000BC BD0401                    mov bp, initial_time
-   158                                  
-   159                                  .skip:
-   160                                  
-   161                                  %ifdef MUSIC
-   162                                    ; Music
-   163                                  ;  mov cx, bp
-   164                                  ;  and cx, 0x7f
-   165                                  ;  jnz skip_play
-   166                                  
-   167                                  ;  mov si, music
-   168                                  ;  mov dx, 0x330
-   169                                  ;  mov cl, 5
-   170                                  ;  rep  outsb
-   171                                  ;  inc dx
-   172                                  ;  outsb
-   173                                  %endif
+   154                                  .skip:
+   155                                  
+   156                                  ;  mov al, tempo
+   157                                  ;	out 40h, al
+   158                                  ;	in al, 0x60
+   159                                  ;	dec al
+   160                                  ;	jmp top
+   161                                  
+   162                                  restart:
+   163 000000AC 0F855CFF                  jne top
+   164                                  
+   165                                  ;timer:
+   166                                  ;  dec bp
+   167                                  ;
+   168                                  ;  cmp bp, 0xf900
+   169                                  ;  jg .skip
+   170                                  ;
+   171                                  ;  mov bp, initial_time
+   172                                  ;
+   173                                  ;.skip:
    174                                  
-   175                                  skip_play:
-   176 000000BF CF                        iret
-   177                                  
-   178                                  palette:
-   179                                    ;db 0, 124, 2, 50
-   180                                    ;db 4, 25, 116, 71
-   181                                    ;db 34, 79, 79, 76
-   182                                    ;db 36, 60, 84, 15
-   183                                  
-   184 000000C0 00                        db 0
-   185 000000C1 03                        db 3   ; l0
-   186 000000C2 7C                        db 124 ; l1
-   187 000000C3 34                        db 52  ; l0+l1
+   175                                  %ifdef MUSIC
+   176                                    ; Music
+   177                                  ;  mov cx, bp
+   178                                  ;  and cx, 0x7f
+   179                                  ;  jnz skip_play
+   180                                  
+   181                                  ;  mov si, music
+   182                                  ;  mov dx, 0x330
+   183                                  ;  mov cl, 5
+   184                                  ;  rep  outsb
+   185                                  ;  inc dx
+   186                                  ;  outsb
+   187                                  %endif
    188                                  
-   189 000000C4 04                        db 4   ; l2
-   190 000000C5 34                        db 52  ; l0+l2
-   191 000000C6 1B                        db 27  ; l1+l2
-   192 000000C7 64                        db 100 ; l0+l1+l2
-   193                                  
-   194 000000C8 6C                        db 108 ; l3
-   195 000000C9 38                        db 56  ; l0+l3
-   196 000000CA 4F                        db 79  ; l1+l3
-   197 000000CB 4C                        db 76 ; l0+l1+l3
-   198                                  
-   199 000000CC 26                        db 38  ; l2+l3
-   200 000000CD 3C                        db 60  ; l0+l2+l3
-   201 000000CE 54                        db 84  ; l1+l2+l3
-   202 000000CF 0F                        db 15  ; l0+l1+l2+l3
-   203                                  
-   204                                  
-   205                                  fptext:
-   206 000000D0 E8ECA0EEEEA0              db 0xe8, 0xec, 0xa0, 0xee, 0xee, 0xa0
-   207 000000D6 C8EEE0EEC4E0              db 0xc8, 0xee, 0xe0, 0xee, 0xc4, 0xe0
-   208 000000DC 8EA6A08AA440              db 0x8e, 0xa6, 0xa0, 0x8a, 0xa4, 0x40
-   209                                  
-   210                                  ;music:
-   211                                    ; single note
-   212                                    ;db 0xc3  ; change instrument on channel 3
-   213                                    ;db 89    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
-   214                                    ;db 0x93  ; play note on channel 10
-   215                                    ;db 35    ; deep "b" = note number 35
-   216                                    ;db 127    ; play with volume = 127
+   189                                  ;skip_play:
+   190                                  ;  iret
+   191                                  
+   192                                  palette:
+   193                                    ;db 0, 124, 2, 50
+   194                                    ;db 4, 25, 116, 71
+   195                                    ;db 34, 79, 79, 76
+   196                                    ;db 36, 60, 84, 15
+   197                                  
+   198 000000B0 00                        db 0
+   199 000000B1 03                        db 3   ; l0
+   200 000000B2 7C                        db 124 ; l1
+   201 000000B3 34                        db 52  ; l0+l1
+   202                                  
+   203 000000B4 04                        db 4   ; l2
+   204 000000B5 34                        db 52  ; l0+l2
+   205 000000B6 1B                        db 27  ; l1+l2
+   206 000000B7 64                        db 100 ; l0+l1+l2
+   207                                  
+   208 000000B8 6C                        db 108 ; l3
+   209 000000B9 38                        db 56  ; l0+l3
+   210 000000BA 4F                        db 79  ; l1+l3
+   211 000000BB 4C                        db 76 ; l0+l1+l3
+   212                                  
+   213 000000BC 26                        db 38  ; l2+l3
+   214 000000BD 3C                        db 60  ; l0+l2+l3
+   215 000000BE 54                        db 84  ; l1+l2+l3
+   216 000000BF 0F                        db 15  ; l0+l1+l2+l3
    217                                  
-   218                                    ;db 0x99   ; play note on channel 10
-   219                                    ;db 39   ; deep "b" = note number 35
-   220                                    ;db 127    ; play with volume = 127
-   221                                  
+   218                                  
+   219                                  fptext:
+   220 000000C0 E8ECA0EEEEA0              db 0xe8, 0xec, 0xa0, 0xee, 0xee, 0xa0
+   221 000000C6 C8EEE0EEC4E0              db 0xc8, 0xee, 0xe0, 0xee, 0xc4, 0xe0
+   222 000000CC 8EA6A08AA440              db 0x8e, 0xa6, 0xa0, 0x8a, 0xa4, 0x40
+   223                                  
+   224                                  ;music:
+   225                                    ; single note
+   226                                    ;db 0xc3  ; change instrument on channel 3
+   227                                    ;db 89    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
+   228                                    ;db 0x93  ; play note on channel 10
+   229                                    ;db 35    ; deep "b" = note number 35
+   230                                    ;db 127    ; play with volume = 127
+   231                                  
+   232                                    ;db 0x99   ; play note on channel 10
+   233                                    ;db 39   ; deep "b" = note number 35
+   234                                    ;db 127    ; play with volume = 127
+   235                                  
