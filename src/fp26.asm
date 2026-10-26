@@ -1,10 +1,9 @@
 org 0x100
 
-%define tempo 90
+%define tempo 30
 
 x2        equ   0x900
 incx      equ   0x902
-idx       equ   0x904
 
 initial_time    equ 260
 
@@ -27,8 +26,6 @@ init:
 top:
 	mov ax, 0xcccd
 	mul di  ; dh: y coord, dl: x coord + carry
-
-  mov byte [idx], 0
 
   ;cmp dh, 64
   ;je draw
@@ -77,9 +74,11 @@ draw:
   cbw ; convert 8-bit negative to 16-bit negative (ax)
   mov word [x2], ax
   sar al, 3  ; shift right and preserve sign
+
   mov byte [incx], al
 
   mov dl, 1
+  mov dh, 0
 
 loop:
   mov ax, word [x2]
@@ -102,7 +101,7 @@ loop:
   jnc .skip
 
   mov cl, dl
-  or byte [idx], cl
+  or dh, cl
 
 .skip:
   mov al, byte [incx]
@@ -115,7 +114,7 @@ loop:
 
 blit:
   mov bx, palette
-  mov al, byte [idx]
+  mov al, dh
   xlat
 	stosb
 
@@ -171,10 +170,10 @@ timer:
 %ifdef MUSIC
   ; Music
   mov cx, bp
-  and cx, 0x03
+  and cx, 0x1f
   jnz skip_play
 
-  mov [music + 3], di
+  ;mov [music + 2], di
   ;add [music + 3], 50
   ;and [music + 3], 0x3f
 
@@ -233,11 +232,11 @@ music:
 
   db 0xc0  ; change instrument on channel 3
   db 89    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
-  db 0x90   ; play note on channel 10
-  db 35   ; deep "b" = note number 35
+  ;db 0x90   ; play note on channel 10
+  ;db 35   ; deep "b" = note number 35
+  ;db 127    ; play with volume = 127
+  db 0x99   ; play note on channel 10
+  db 36   ; deep "b" = note number 35
   db 127    ; play with volume = 127
-;  db 0x99   ; play note on channel 10
-;  db 42   ; deep "b" = note number 35
-;  db 127    ; play with volume = 127
 
 %endif
