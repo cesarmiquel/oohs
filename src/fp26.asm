@@ -1,6 +1,6 @@
 org 0x100
 
-%define tempo 10
+%define tempo 90
 
 x2        equ   0x900
 incx      equ   0x902
@@ -22,8 +22,7 @@ init:
 	mov dx, timer
 	int 0x21
 
-  ; DELETE
-  mov bp, initial_time
+  ; DELETE mov bp, initial_time
 
 top:
 	mov ax, 0xcccd
@@ -159,6 +158,7 @@ restart:
   jne top
 
 timer:
+  pusha
 ;  dec bp
 ;
 ;  cmp bp, 0xf900
@@ -171,14 +171,15 @@ timer:
 %ifdef MUSIC
   ; Music
   mov cx, bp
-  and cx, 0x07
+  and cx, 0x03
   jnz skip_play
 
-  add [music + 3], byte di
-  and [music + 3], 0x3f
+  mov [music + 3], di
+  ;add [music + 3], 50
+  ;and [music + 3], 0x3f
 
-  mov si, music
   mov dx, 0x330
+  mov si, music
   mov cl, 5
   rep  outsb
   inc dx
@@ -186,6 +187,7 @@ timer:
 %endif
 
 skip_play:
+  popa
   iret
 
 palette:
