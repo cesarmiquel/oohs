@@ -3,7 +3,6 @@ org 0x100
 %define tempo 30
 
 x2        equ   0x900
-incx      equ   0x902
 
 initial_time    equ 260
 
@@ -45,28 +44,19 @@ top:
   cmp al, 2          ; 2 bytes
   jbe draw           ; 2 bytes  unsigned: AL <= 2
 
-  mov si, di
-  sub si, 320
+  lea si, [di-320]
   mov cx, 320
-  cld
   es rep movsb
   jmp short top
 
 draw:
-  shr dh, 5 ; row - y/32
-  sub dh, 2 ; row - 2
-
-  ; 0 <= row < 3
-  jl blit
-  cmp dh, 2
-  jg blit
+  mov dh, al
 
   ; load si with pointer to font row
-  mov si, fptext
-  xor ax, ax
-  mov al, dh
+  ;mov si, fptext
+  mov ah, 0
   mul ax, 6   ; row * 6
-  add si, ax
+  mov si, ax
 
   ; save x and init x2
   mov al, dl
@@ -75,10 +65,8 @@ draw:
   mov word [x2], ax
   sar al, 3  ; shift right and preserve sign
 
-  mov byte [incx], al
-
-  mov dl, 1
-  mov dh, 0
+  mov dx, 1   ; dl loop counter, dh = 0 (idx)
+  mov ch, al  ; x/8
 
 loop:
   mov ax, word [x2]
@@ -87,24 +75,17 @@ loop:
   jl .skip
 
   shr ax, 5  ; ofx = (x2-x1)/32
-  mov cx, ax
-  shr ax, 3  ; pos = ofx/8
-  cmp al, 5
+  cmp al, 47
   jg restart
 
-  xchg bx, ax
-
   xor ah, ah
-  mov al, byte [si+bx]
-  and cl, 0x07
-  shl al, cl
+  bt [si+fptext], ax
   jnc .skip
 
-  mov cl, dl
-  or dh, cl
+  or dh, dl
 
 .skip:
-  mov al, byte [incx]
+  mov al, ch
   cbw
   add word [x2], ax
 
@@ -118,14 +99,6 @@ blit:
   xlat
 	stosb
 
-
-  ; DELETE
-;.loop:
-;  cmp di, 64*320 + 320*20
-;  jg .loop
-
-	;inc di
-	;inc di
   test di, di
   jnz top
 
@@ -139,6 +112,26 @@ blit:
 ;  dec bp
   dec bp
 
+%ifdef MUSIC
+  ; Music
+  mov cx, bp
+  and cx, 0x03
+  jnz skip_play
+
+  ;mov [music + 3], di
+  ;add byte [music + 3], al
+  ;and byte [music + 3], 0x3f
+  ;xor [music + 3], 0x07
+
+  mov dx, 0x330
+  mov si, music
+  mov cl, 5
+  rep  outsb
+  inc dx
+  outsb
+%endif
+
+skip_play:
   cmp bp, 0xf900
   jg .skip
 
@@ -167,25 +160,6 @@ timer:
 ;
 ;.skip:
 
-%ifdef MUSIC
-  ; Music
-  mov cx, bp
-  and cx, 0x1f
-  jnz skip_play
-
-  ;mov [music + 2], di
-  ;add [music + 3], 50
-  ;and [music + 3], 0x3f
-
-  mov dx, 0x330
-  mov si, music
-  mov cl, 5
-  rep  outsb
-  inc dx
-  outsb
-%endif
-
-skip_play:
   popa
   iret
 
@@ -216,10 +190,15 @@ palette:
   db 15  ; l0+l1+l2+l3
 
 
-fptext:
-  db 0xe8, 0xec, 0xa0, 0xee, 0xee, 0xa0
-  db 0xc8, 0xee, 0xe0, 0xee, 0xc4, 0xe0
-  db 0x8e, 0xa6, 0xa0, 0x8a, 0xa4, 0x40
+fptext:  ; pixel column k of each byte is bit k
+  db 0x2e, 0x6e, 0x0a, 0xee, 0xee, 0x0a
+  db 0x26, 0xee, 0x0e, 0xee, 0x46, 0x0e
+  db 0xe2, 0xca, 0x0a, 0xa2, 0x4a, 0x04
+
+;fptext:
+;  db 0xe8, 0xec, 0xa0, 0xee, 0xee, 0xa0
+;  db 0xc8, 0xee, 0xe0, 0xee, 0xc4, 0xe0
+;  db 0x8e, 0xa6, 0xa0, 0x8a, 0xa4, 0x40
 
 %ifdef MUSIC
 music:
@@ -232,11 +211,13 @@ music:
 
   db 0xc0  ; change instrument on channel 3
   db 89    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
-  ;db 0x90   ; play note on channel 10
-  ;db 35   ; deep "b" = note number 35
-  ;db 127    ; play with volume = 127
-  db 0x99   ; play note on channel 10
-  db 36   ; deep "b" = note number 35
+  db 0x90   ; play note on channel 10
+  db 35   ; deep "b" = note number 35
   db 127    ; play with volume = 127
+
+  ; Drum channel / K.O.II
+  db 0x90   ; play note on channel 10 (drums)
+  db 38
+  db 110    ; play with volume = 127
 
 %endif
