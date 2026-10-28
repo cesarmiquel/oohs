@@ -1,9 +1,7 @@
 org 0x100
 
-%define tempo 30
-
+; %define tempo 30
 x2        equ   0x900
-
 initial_time    equ 260
 
 init:
@@ -78,7 +76,7 @@ loop:
   cmp al, 47
   jg restart
 
-  xor ah, ah
+  ;xor ah, ah
   bt [si+fptext], ax
   jnc .skip
 
@@ -113,10 +111,9 @@ blit:
 
 %ifdef MUSIC
   ; Music
+  mov si, music
   test bp, 0x07
   jnz skip_play
-
-  mov si, music
 
 ch1:
   ; silence ch1 and set fixed volume for ch2
@@ -160,7 +157,7 @@ incvol:
 skip_play:
   cmp bp, 0xfd90
   jg .skip
-  mov [music+3], 57
+  mov [si+3], 57
 
   cmp bp, 0xf9b0
   jg .skip
