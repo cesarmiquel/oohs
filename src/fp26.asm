@@ -114,18 +114,35 @@ blit:
 
 %ifdef MUSIC
   ; Music
-  mov cx, bp
-  and cx, 0x03
+  mov dx, bp
+  and dx, 0x07
   jnz skip_play
 
+  ; unmute ch1 and ch2
+  mov si, music
+  mov byte [si+2], 127
+  mov byte [si+5], 127
+
+  rol byte [si + 6], 1
+  jc skipmute1
+  mov byte [si + 2], 0
+
+skipmute1:
+  rol byte [si + 7], 1
+  jc skipmute2
+
+  mov byte [si + 5], 0
+
+skipmute2:
+  xor byte [si + 4], 1
   ;mov [music + 3], di
-  ;add byte [music + 3], al
+  ;add byte [music + 3], ah
   ;and byte [music + 3], 0x3f
   ;xor [music + 3], 0x07
 
   mov dx, 0x330
   mov si, music
-  mov cl, 5
+  mov cl, 6
   rep  outsb
   inc dx
   outsb
@@ -150,7 +167,7 @@ restart:
   jne top
 
 timer:
-  pusha
+;  pusha
 ;  dec bp
 ;
 ;  cmp bp, 0xf900
@@ -159,8 +176,7 @@ timer:
 ;  mov bp, initial_time
 ;
 ;.skip:
-
-  popa
+;  popa
   iret
 
 palette:
@@ -209,15 +225,22 @@ music:
   ;db 30    ; deep "b" = note number 35
   ;db 127    ; play with volume = 127
 
-  db 0xc0  ; change instrument on channel 3
-  db 89    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
-  db 0x90   ; play note on channel 10
-  db 35   ; deep "b" = note number 35
-  db 127    ; play with volume = 127
+  ;db 0xc0  ; change instrument on channel 3
+  ;db 89    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
+  ;db 0x90   ; play note on channel 10
+  ;db 55   ; deep "b" = note number 35
+  ;db 0    ; play with volume = 127
 
   ; Drum channel / K.O.II
-  db 0x90   ; play note on channel 10 (drums)
-  db 38
+  db 0x99   ; play note on channel 10 (drums)
+  db 36
   db 110    ; play with volume = 127
+  db 0x99   ; play note on channel 10 (drums)
+  db 62
+  db 110    ; play with volume = 127
+
+pattern:
+  db 0b10011000
+  db 0b10101111
 
 %endif
