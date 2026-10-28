@@ -127,6 +127,9 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 Para debugear:
 https://yjdoc2.github.io/8086-emulator-web/compile
 
+Parallax Scroll effect that appears in "ReMODed" demo by 7dump and SandS.
+https://www.youtube.com/watch?v=gKUF5pLJSW0
+
 
 ## Idea 1: 2D pattern
 

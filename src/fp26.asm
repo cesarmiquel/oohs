@@ -116,32 +116,34 @@ blit:
   test bp, 0x07
   jnz skip_play
 
-  ; unmute ch1 and ch2
   mov si, music
 
-ch0:
-  mov byte [si+2+5], 0
-  mov byte [si+5+5], 80
+ch1:
+  ; silence ch1 and set fixed volume for ch2
+  mov byte [si + 2 + 5], 0      ; ch1
+  mov byte [si + 5 + 5], 90     ; ch2
 
-  rol byte [si + 6+5], 1
+  ; pattern 1
+  rol byte [si + 6 + 5], 1
   jc skipmute1
-  mov byte [si + 2+5], 0
+
+  ; mute ch1
+  mov byte [si + 2 + 5], 0
+
+  ; use pattern 1 to gate the synth channel (ch0)
   xor byte [si + 4], 0x7f
 
 skipmute1:
-  rol byte [si + 7+5], 1
+  rol byte [si + 7 + 5], 1
   jc skipmute2
 
-  mov byte [si + 5+5], 0
+  ; mute ch 2
+  mov byte [si + 5 + 5], 0
 
 skipmute2:
-  xor byte [si + 1+5], 1
-  xor byte [si + 4+5], 1
-
-  ;mov [music + 3], di
-  ;add byte [music + 3], ah
-  ;and byte [music + 3], 0x3f
-  ;xor [music + 3], 0x07
+  ; switches instruments of ch1 and ch2
+  xor byte [si + 1 + 5], 1
+  xor byte [si + 4 + 5], 1
 
 playmidi:
   mov dx, 0x330
@@ -150,18 +152,21 @@ playmidi:
   inc dx
   outsb
 
-  ; increase volume of ch0
+  ; increase volume of ch1
 incvol:
-  inc [ch0+3]
-  ;inc [ch0+7]
+  inc [ch1+3]
 %endif
 
 skip_play:
+  cmp bp, 0xfd90
+  jg .skip
+  mov [music+3], 57
+
   cmp bp, 0xf9b0
   jg .skip
 
-  jmp quit
-  ;mov bp, initial_time
+  jmp short quit
+  ;mov bp, initial_time ; reset timer to repeat
 
 .skip:
 
@@ -234,33 +239,24 @@ fptext:  ; pixel column k of each byte is bit k
 
 %ifdef MUSIC
 music:
-  ; single note
-  ;db 0xc3  ; change instrument on channel 3
-  ;db 26    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
-  ;db 0x93  ; play note on channel 10
-  ;db 30    ; deep "b" = note number 35
-  ;db 127    ; play with volume = 127
-
+  ; synth channel
   db 0xc0  ; change instrument on channel 3
-  db 41    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
-  db 0x90   ; play note on channel 10
-  db 45   ; deep "b" = note number 35
-  db 127    ; play with volume = 127
+  ;db 52/53    ; Weird voice like effect. Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
+  ; violin: db 41    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
+  db 53    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
+  db 0x90  ; play note on channel 10
+  db 55    ; note number 45
+  db 127   ; set volume to 127 but it will be gated
 
   ; Drum channel / K.O.II
   db 0x99   ; play note on channel 10 (drums)
   db 40
   db 110    ; play with volume = 127
   db 0x99   ; play note on channel 10 (drums)
-  ;db 62
   db 62
   db 80    ; play with volume = 127
 
 pattern:
-  db 0b10011000
-  db 0b01101100
-  ;db 0b10101111
-endmidi:
-  db 0xcc
-  db 120
+  db 0b10011000 ; pattern 1
+  db 0b01101100 ; pattern 2
 %endif

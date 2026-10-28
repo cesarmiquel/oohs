@@ -76,10 +76,10 @@
     76                                  
     77 0000004A C1E805                    shr ax, 5  ; ofx = (x2-x1)/32
     78 0000004D 3C2F                      cmp al, 47
-    79 0000004F 7F72                      jg restart
+    79 0000004F 7F7C                      jg restart
     80                                  
     81 00000051 30E4                      xor ah, ah
-    82 00000053 0FA384[D900]              bt [si+fptext], ax
+    82 00000053 0FA384[E300]              bt [si+fptext], ax
     83 00000058 7302                      jnc .skip
     84                                  
     85 0000005A 08D6                      or dh, dl
@@ -94,7 +94,7 @@
     94 00000068 75D9                      jne loop
     95                                  
     96                                  blit:
-    97 0000006A BB[C900]                  mov bx, palette
+    97 0000006A BB[D300]                  mov bx, palette
     98 0000006D 88F0                      mov al, dh
     99 0000006F D7                        xlat
    100 00000070 AA                      	stosb
@@ -116,151 +116,147 @@
    116 0000007E F7C50700                  test bp, 0x07
    117 00000082 7536                      jnz skip_play
    118                                  
-   119                                    ; unmute ch1 and ch2
-   120 00000084 BE[EB00]                  mov si, music
-   121                                  
-   122                                  ch0:
-   123 00000087 C6440700                  mov byte [si+2+5], 0
-   124 0000008B C6440A50                  mov byte [si+5+5], 80
+   119 00000084 BE[F500]                  mov si, music
+   120                                  
+   121                                  ch1:
+   122                                    ; silence ch1 and set fixed volume for ch2
+   123 00000087 C6440700                  mov byte [si + 2 + 5], 0      ; ch1
+   124 0000008B C6440A5A                  mov byte [si + 5 + 5], 90     ; ch2
    125                                  
-   126 0000008F D0440B                    rol byte [si + 6+5], 1
-   127 00000092 7208                      jc skipmute1
-   128 00000094 C6440700                  mov byte [si + 2+5], 0
-   129 00000098 8074047F                  xor byte [si + 4], 0x7f
-   130                                  
-   131                                  skipmute1:
-   132 0000009C D0440C                    rol byte [si + 7+5], 1
-   133 0000009F 7204                      jc skipmute2
-   134                                  
-   135 000000A1 C6440A00                  mov byte [si + 5+5], 0
-   136                                  
-   137                                  skipmute2:
-   138 000000A5 80740601                  xor byte [si + 1+5], 1
-   139 000000A9 80740901                  xor byte [si + 4+5], 1
-   140                                  
-   141                                    ;mov [music + 3], di
-   142                                    ;add byte [music + 3], ah
-   143                                    ;and byte [music + 3], 0x3f
-   144                                    ;xor [music + 3], 0x07
-   145                                  
-   146                                  playmidi:
-   147 000000AD BA3003                    mov dx, 0x330
-   148 000000B0 B10B                      mov cl, 6 + 5
-   149 000000B2 F36E                      rep  outsb
-   150 000000B4 42                        inc dx
-   151 000000B5 6E                        outsb
-   152                                  
-   153                                    ; increase volume of ch0
-   154                                  incvol:
-   155 000000B6 FE06[8A00]                inc [ch0+3]
-   156                                    ;inc [ch0+7]
-   157                                  %endif
-   158                                  
-   159                                  skip_play:
-   160 000000BA 81FDB9F9                  cmp bp, 0xf9b9
-   161 000000BE 7F03                      jg .skip
-   162                                  
-   163 000000C0 E90500                    jmp quit
-   164                                    ;mov bp, initial_time
-   165                                  
-   166                                  .skip:
+   126                                    ; pattern 1
+   127 0000008F D0440B                    rol byte [si + 6 + 5], 1
+   128 00000092 7208                      jc skipmute1
+   129                                  
+   130                                    ; mute ch1
+   131 00000094 C6440700                  mov byte [si + 2 + 5], 0
+   132                                  
+   133                                    ; use pattern 1 to gate the synth channel (ch0)
+   134 00000098 8074047F                  xor byte [si + 4], 0x7f
+   135                                  
+   136                                  skipmute1:
+   137 0000009C D0440C                    rol byte [si + 7 + 5], 1
+   138 0000009F 7204                      jc skipmute2
+   139                                  
+   140                                    ; mute ch 2
+   141 000000A1 C6440A00                  mov byte [si + 5 + 5], 0
+   142                                  
+   143                                  skipmute2:
+   144                                    ; switches instruments of ch1 and ch2
+   145 000000A5 80740601                  xor byte [si + 1 + 5], 1
+   146 000000A9 80740901                  xor byte [si + 4 + 5], 1
+   147                                  
+   148                                  playmidi:
+   149 000000AD BA3003                    mov dx, 0x330
+   150 000000B0 B10B                      mov cl, 6 + 5
+   151 000000B2 F36E                      rep  outsb
+   152 000000B4 42                        inc dx
+   153 000000B5 6E                        outsb
+   154                                  
+   155                                    ; increase volume of ch1
+   156                                  incvol:
+   157 000000B6 FE06[8A00]                inc [ch1+3]
+   158                                  %endif
+   159                                  
+   160                                  skip_play:
+   161 000000BA 81FD90FD                  cmp bp, 0xfd90
+   162 000000BE 7F0D                      jg .skip
+   163 000000C0 C606[F800]39              mov [music+3], 57
+   164                                  
+   165 000000C5 81FDB0F9                  cmp bp, 0xf9b0
+   166 000000C9 7F02                      jg .skip
    167                                  
-   168                                    ;mov al, tempo
-   169                                  	;out 40h, al
-   170                                  	;in al, 0x60
-   171                                  	;dec al
-   172                                  	;jmp top
-   173                                  
-   174                                    ; wait for ESC
-   175                                    ;in ax, 0x60
-   176                                    ;dec al
-   177                                  ;jnz restart
+   168 000000CB EB05                      jmp short quit
+   169                                    ;mov bp, initial_time ; reset timer to repeat
+   170                                  
+   171                                  .skip:
+   172                                  
+   173                                    ;mov al, tempo
+   174                                  	;out 40h, al
+   175                                  	;in al, 0x60
+   176                                  	;dec al
+   177                                  	;jmp top
    178                                  
-   179                                  restart:
-   180 000000C3 47                        inc di
-   181 000000C4 0F8541FF                  jne top
-   182                                  
-   183                                  quit:
-   184 000000C8 C3                        ret
-   185                                  ;timer:
-   186                                  ;  pusha
-   187                                  ;  dec bp
-   188                                  ;
-   189                                  ;  cmp bp, 0xf900
-   190                                  ;  jg .skip
-   191                                  ;
-   192                                  ;  mov bp, initial_time
+   179                                    ; wait for ESC
+   180                                    ;in ax, 0x60
+   181                                    ;dec al
+   182                                  ;jnz restart
+   183                                  
+   184                                  restart:
+   185 000000CD 47                        inc di
+   186 000000CE 0F8537FF                  jne top
+   187                                  
+   188                                  quit:
+   189 000000D2 C3                        ret
+   190                                  ;timer:
+   191                                  ;  pusha
+   192                                  ;  dec bp
    193                                  ;
-   194                                  ;.skip:
-   195                                  ;  popa
-   196                                  ;  iret
-   197                                  
-   198                                  palette:
-   199                                    ;db 0, 124, 2, 50
-   200                                    ;db 4, 25, 116, 71
-   201                                    ;db 34, 79, 79, 76
-   202                                    ;db 36, 60, 84, 15
-   203                                  
-   204 000000C9 00                        db 0
-   205 000000CA 03                        db 3   ; l0
-   206 000000CB 7C                        db 124 ; l1
-   207 000000CC 34                        db 52  ; l0+l1
+   194                                  ;  cmp bp, 0xf900
+   195                                  ;  jg .skip
+   196                                  ;
+   197                                  ;  mov bp, initial_time
+   198                                  ;
+   199                                  ;.skip:
+   200                                  ;  popa
+   201                                  ;  iret
+   202                                  
+   203                                  palette:
+   204                                    ;db 0, 124, 2, 50
+   205                                    ;db 4, 25, 116, 71
+   206                                    ;db 34, 79, 79, 76
+   207                                    ;db 36, 60, 84, 15
    208                                  
-   209 000000CD 04                        db 4   ; l2
-   210 000000CE 34                        db 52  ; l0+l2
-   211 000000CF 1B                        db 27  ; l1+l2
-   212 000000D0 64                        db 100 ; l0+l1+l2
+   209 000000D3 00                        db 0
+   210 000000D4 03                        db 3   ; l0
+   211 000000D5 7C                        db 124 ; l1
+   212 000000D6 34                        db 52  ; l0+l1
    213                                  
-   214 000000D1 6C                        db 108 ; l3
-   215 000000D2 38                        db 56  ; l0+l3
-   216 000000D3 4F                        db 79  ; l1+l3
-   217 000000D4 4C                        db 76 ; l0+l1+l3
+   214 000000D7 04                        db 4   ; l2
+   215 000000D8 34                        db 52  ; l0+l2
+   216 000000D9 1B                        db 27  ; l1+l2
+   217 000000DA 64                        db 100 ; l0+l1+l2
    218                                  
-   219 000000D5 26                        db 38  ; l2+l3
-   220 000000D6 3C                        db 60  ; l0+l2+l3
-   221 000000D7 54                        db 84  ; l1+l2+l3
-   222 000000D8 0F                        db 15  ; l0+l1+l2+l3
+   219 000000DB 6C                        db 108 ; l3
+   220 000000DC 38                        db 56  ; l0+l3
+   221 000000DD 4F                        db 79  ; l1+l3
+   222 000000DE 4C                        db 76 ; l0+l1+l3
    223                                  
-   224                                  
-   225                                  fptext:  ; pixel column k of each byte is bit k
-   226 000000D9 2E6E0AEEEE0A              db 0x2e, 0x6e, 0x0a, 0xee, 0xee, 0x0a
-   227 000000DF 26EE0EEE460E              db 0x26, 0xee, 0x0e, 0xee, 0x46, 0x0e
-   228 000000E5 E2CA0AA24A04              db 0xe2, 0xca, 0x0a, 0xa2, 0x4a, 0x04
+   224 000000DF 26                        db 38  ; l2+l3
+   225 000000E0 3C                        db 60  ; l0+l2+l3
+   226 000000E1 54                        db 84  ; l1+l2+l3
+   227 000000E2 0F                        db 15  ; l0+l1+l2+l3
+   228                                  
    229                                  
-   230                                  ;fptext:
-   231                                  ;  db 0xe8, 0xec, 0xa0, 0xee, 0xee, 0xa0
-   232                                  ;  db 0xc8, 0xee, 0xe0, 0xee, 0xc4, 0xe0
-   233                                  ;  db 0x8e, 0xa6, 0xa0, 0x8a, 0xa4, 0x40
+   230                                  fptext:  ; pixel column k of each byte is bit k
+   231 000000E3 2E6E0AEEEE0A              db 0x2e, 0x6e, 0x0a, 0xee, 0xee, 0x0a
+   232 000000E9 26EE0EEE460E              db 0x26, 0xee, 0x0e, 0xee, 0x46, 0x0e
+   233 000000EF E2CA0AA24A04              db 0xe2, 0xca, 0x0a, 0xa2, 0x4a, 0x04
    234                                  
-   235                                  %ifdef MUSIC
-   236                                  music:
-   237                                    ; single note
-   238                                    ;db 0xc3  ; change instrument on channel 3
-   239                                    ;db 26    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
-   240                                    ;db 0x93  ; play note on channel 10
-   241                                    ;db 30    ; deep "b" = note number 35
-   242                                    ;db 127    ; play with volume = 127
-   243                                  
-   244 000000EB C0                        db 0xc0  ; change instrument on channel 3
-   245 000000EC 29                        db 41    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
-   246 000000ED 90                        db 0x90   ; play note on channel 10
-   247 000000EE 2D                        db 45   ; deep "b" = note number 35
-   248 000000EF 7F                        db 127    ; play with volume = 127
-   249                                  
-   250                                    ; Drum channel / K.O.II
-   251 000000F0 99                        db 0x99   ; play note on channel 10 (drums)
-   252 000000F1 28                        db 40
-   253 000000F2 6E                        db 110    ; play with volume = 127
-   254 000000F3 99                        db 0x99   ; play note on channel 10 (drums)
-   255                                    ;db 62
-   256 000000F4 3E                        db 62
-   257 000000F5 50                        db 80    ; play with volume = 127
+   235                                  ;fptext:
+   236                                  ;  db 0xe8, 0xec, 0xa0, 0xee, 0xee, 0xa0
+   237                                  ;  db 0xc8, 0xee, 0xe0, 0xee, 0xc4, 0xe0
+   238                                  ;  db 0x8e, 0xa6, 0xa0, 0x8a, 0xa4, 0x40
+   239                                  
+   240                                  %ifdef MUSIC
+   241                                  music:
+   242                                    ; synth channel
+   243 000000F5 C0                        db 0xc0  ; change instrument on channel 3
+   244                                    ;db 52/53    ; Weird voice like effect. Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
+   245                                    ; violin: db 41    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
+   246 000000F6 35                        db 53    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
+   247 000000F7 90                        db 0x90  ; play note on channel 10
+   248 000000F8 37                        db 55    ; note number 45
+   249 000000F9 7F                        db 127   ; set volume to 127 but it will be gated
+   250                                  
+   251                                    ; Drum channel / K.O.II
+   252 000000FA 99                        db 0x99   ; play note on channel 10 (drums)
+   253 000000FB 28                        db 40
+   254 000000FC 6E                        db 110    ; play with volume = 127
+   255 000000FD 99                        db 0x99   ; play note on channel 10 (drums)
+   256 000000FE 3E                        db 62
+   257 000000FF 50                        db 80    ; play with volume = 127
    258                                  
    259                                  pattern:
-   260 000000F6 98                        db 0b10011000
-   261 000000F7 6C                        db 0b01101100
-   262                                    ;db 0b10101111
-   263                                  endmidi:
-   264 000000F8 CC                        db 0xcc
-   265 000000F9 78                        db 120
-   266                                  %endif
+   260 00000100 98                        db 0b10011000 ; pattern 1
+   261 00000101 6C                        db 0b01101100 ; pattern 2
+   262                                  %endif
