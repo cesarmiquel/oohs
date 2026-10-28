@@ -16,9 +16,9 @@ init:
 	pop es
 
   ; setup dos timer
-  mov ax, 0x251c
-	mov dx, timer
-	int 0x21
+  ;mov ax, 0x251c
+	;mov dx, timer
+	;int 0x21
 
   ; DELETE mov bp, initial_time
 
@@ -109,64 +109,78 @@ blit:
   test al, 8
   jz .wait_start     ; wait for new retrace to begin
 
-;  dec bp
   dec bp
 
 %ifdef MUSIC
   ; Music
-  mov dx, bp
-  and dx, 0x07
+  test bp, 0x07
   jnz skip_play
 
   ; unmute ch1 and ch2
   mov si, music
-  mov byte [si+2], 127
-  mov byte [si+5], 127
 
-  rol byte [si + 6], 1
+ch0:
+  mov byte [si+2+5], 0
+  mov byte [si+5+5], 0
+
+  rol byte [si + 6+5], 1
   jc skipmute1
-  mov byte [si + 2], 0
+  mov byte [si + 2+5], 0
+  xor byte [si + 4], 0x7f
 
 skipmute1:
-  rol byte [si + 7], 1
+  rol byte [si + 7+5], 1
   jc skipmute2
 
-  mov byte [si + 5], 0
+  mov byte [si + 5+5], 0
 
 skipmute2:
-  xor byte [si + 4], 1
+  xor byte [si + 1+5], 1
+  xor byte [si + 4+5], 1
+
   ;mov [music + 3], di
   ;add byte [music + 3], ah
   ;and byte [music + 3], 0x3f
   ;xor [music + 3], 0x07
 
   mov dx, 0x330
-  mov si, music
-  mov cl, 6
+  mov cl, 6 + 5
   rep  outsb
   inc dx
   outsb
+
+  ; increase volume of ch0
+  inc [ch0+3]
+  inc [ch0+7]
 %endif
 
 skip_play:
-  cmp bp, 0xf900
+  cmp bp, 0xf990
   jg .skip
 
-  mov bp, initial_time
+  jmp quit
+  ;mov bp, initial_time
 
 .skip:
 
-  mov al, tempo
-	out 40h, al
-	in al, 0x60
-	dec al
-	jmp top
+  ;mov al, tempo
+	;out 40h, al
+	;in al, 0x60
+	;dec al
+	;jmp top
+
+  ; wait for ESC
+  in ax, 0x60
+  dec al
+jnz restart
+quit:
+  ret
 
 restart:
   inc di
   jne top
 
-timer:
+;timer:
 ;  pusha
 ;  dec bp
 ;
@@ -177,7 +191,7 @@ timer:
 ;
 ;.skip:
 ;  popa
-  iret
+;  iret
 
 palette:
   ;db 0, 124, 2, 50
@@ -225,22 +239,22 @@ music:
   ;db 30    ; deep "b" = note number 35
   ;db 127    ; play with volume = 127
 
-  ;db 0xc0  ; change instrument on channel 3
-  ;db 89    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
-  ;db 0x90   ; play note on channel 10
-  ;db 55   ; deep "b" = note number 35
-  ;db 0    ; play with volume = 127
+  db 0xc0  ; change instrument on channel 3
+  db 41    ; Instrument: https://en.wikipedia.org/wiki/General_MIDI#Sound_Effects
+  db 0x90   ; play note on channel 10
+  db 45   ; deep "b" = note number 35
+  db 127    ; play with volume = 127
 
   ; Drum channel / K.O.II
   db 0x99   ; play note on channel 10 (drums)
-  db 36
+  db 40
   db 110    ; play with volume = 127
   db 0x99   ; play note on channel 10 (drums)
   db 62
   db 110    ; play with volume = 127
 
 pattern:
+  ;db 0b10011000
   db 0b10011000
   db 0b10101111
-
 %endif
