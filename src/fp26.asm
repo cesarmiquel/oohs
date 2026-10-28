@@ -121,7 +121,7 @@ blit:
 
 ch0:
   mov byte [si+2+5], 0
-  mov byte [si+5+5], 0
+  mov byte [si+5+5], 80
 
   rol byte [si + 6+5], 1
   jc skipmute1
@@ -143,6 +143,7 @@ skipmute2:
   ;and byte [music + 3], 0x3f
   ;xor [music + 3], 0x07
 
+playmidi:
   mov dx, 0x330
   mov cl, 6 + 5
   rep  outsb
@@ -150,12 +151,13 @@ skipmute2:
   outsb
 
   ; increase volume of ch0
+incvol:
   inc [ch0+3]
-  inc [ch0+7]
+  ;inc [ch0+7]
 %endif
 
 skip_play:
-  cmp bp, 0xf990
+  cmp bp, 0xf9b0
   jg .skip
 
   jmp quit
@@ -170,16 +172,16 @@ skip_play:
 	;jmp top
 
   ; wait for ESC
-  in ax, 0x60
-  dec al
-jnz restart
-quit:
-  ret
+  ;in ax, 0x60
+  ;dec al
+;jnz restart
 
 restart:
   inc di
   jne top
 
+quit:
+  ret
 ;timer:
 ;  pusha
 ;  dec bp
@@ -250,11 +252,15 @@ music:
   db 40
   db 110    ; play with volume = 127
   db 0x99   ; play note on channel 10 (drums)
+  ;db 62
   db 62
-  db 110    ; play with volume = 127
+  db 80    ; play with volume = 127
 
 pattern:
-  ;db 0b10011000
   db 0b10011000
-  db 0b10101111
+  db 0b01101100
+  ;db 0b10101111
+endmidi:
+  db 0xcc
+  db 120
 %endif
