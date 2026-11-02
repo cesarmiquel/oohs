@@ -1,4 +1,4 @@
-# Oohs - 255 byte msdos intro presented @FlashParty 2026
+# Oohs - 255 byte intro presented @FlashParty 2026
 
 ![Oohs screenshot](https://raw.githubusercontent.com/cesarmiquel/oohs/1cafbea52f57f54c826141d464d9470f5760fbbd/release/oohs/oohs.png)
 
