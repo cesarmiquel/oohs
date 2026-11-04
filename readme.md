@@ -28,3 +28,10 @@ $ timidity -iA -p12 --module=32
 ## About the demo
 
 One important aspect of this demo is that I did use AI throughout the development process: I used it to understand the original code, to debug strange bugs and help to simplify the assembler and use 80x86 instructions that I did not know to reduce the size. I have included my full Claude session in the file `claude-session.md` I also asked Claude to reduce the size and he got it to 223 bytes (compared to my 255). I will write a long article about how I used AI because I learned a lot during the process and I think it might be useful for others. This repo also contains also the version that Claude generated.
+
+## Links
+
+- [Demozoo entry](https://demozoo.org/productions/400197/) - The entry in Demozoo
+- [Pouet entry](https://www.pouet.net/prod.php?which=107295)
+- [YouTube Video](https://www.youtube.com/watch?v=2M6MJiqjPb4) - The capture of the demo.
+- [Shader toy](https://www.shadertoy.com/view/sX3SDf) - Before coding the demo in 80x86 I created a proof of concept Shadertoy version of the effect to make sure it was small enough to be able to make it in 256 bytes or less.
