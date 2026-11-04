@@ -32,6 +32,6 @@ One important aspect of this demo is that I did use AI throughout the developmen
 ## Links
 
 - [Demozoo entry](https://demozoo.org/productions/400197/) - The entry in Demozoo
-- [Pouet entry](https://www.pouet.net/prod.php?which=107295)
-- [YouTube Video](https://www.youtube.com/watch?v=2M6MJiqjPb4) - The capture of the demo.
+- [Pouet entry](https://www.pouet.net/prod.php?which=107295) - The entry in Pouet demo site.
+- [YouTube Video](https://www.youtube.com/watch?v=2M6MJiqjPb4) - The capture of the demo. Crank up the volume because audio is also key to this little demo.
 - [Shader toy](https://www.shadertoy.com/view/sX3SDf) - Before coding the demo in 80x86 I created a proof of concept Shadertoy version of the effect to make sure it was small enough to be able to make it in 256 bytes or less.
